@@ -1,4 +1,4 @@
-import {createCalculator} from './calculator.js';
+import {createCalculator,keyToInput} from './calculator.js';
 const calculator = createCalculator();
 const output = document.querySelector('#result');
 const status = document.querySelector('#operation');
@@ -11,3 +11,10 @@ function press(value) {
   });
 }
 document.querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => press(button.dataset.key)));
+document.addEventListener('keydown', event => {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input, textarea, [contenteditable="true"]')) return;
+  const value = keyToInput(event.key);
+  if (value === null) return;
+  event.preventDefault();
+  press(value);
+});

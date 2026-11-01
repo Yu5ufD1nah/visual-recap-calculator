@@ -1,3 +1,11 @@
+export function keyToInput(key) {
+  if (/^[0-9.+*/=-]$/.test(key)) return key;
+  if (key === 'Enter') return '=';
+  if (key === 'Backspace') return 'backspace';
+  if (key === 'Escape') return 'clear';
+  return null;
+}
+
 export function calculate(left, operator, right) {
   if (!Number.isFinite(left) || !Number.isFinite(right)) throw new Error('Enter valid numbers');
   let result;

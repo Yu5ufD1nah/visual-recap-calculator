@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {calculate,createCalculator} from '../app/calculator.js';
+import {calculate,createCalculator,keyToInput} from '../app/calculator.js';
 test('four arithmetic operations and decimal rounding',()=>{
  assert.equal(calculate(7,'+',5),12);assert.equal(calculate(7,'-',5),2);
  assert.equal(calculate(7,'*',5),35);assert.equal(calculate(7,'/',2),3.5);
@@ -21,4 +21,12 @@ test('decimal input, deletion, sign, operator replacement and clear',()=>{
  c.input('sign');assert.equal(c.display,'-0.5');
  ['+','*','2','='].forEach(c.input);assert.equal(c.display,'-1');
  c.input('clear');assert.equal(c.display,'0');assert.equal(c.operation,null);
+});
+test('keyboard controls use the same calculation state machine',()=>{
+ const c=createCalculator();
+ for(const key of ['1','2','+','3','Enter'])c.input(keyToInput(key));
+ assert.equal(c.display,'15');
+ c.input(keyToInput('Escape'));assert.equal(c.display,'0');
+ assert.equal(keyToInput('Backspace'),'backspace');
+ assert.equal(keyToInput('Tab'),null);assert.equal(keyToInput('F5'),null);
 });
