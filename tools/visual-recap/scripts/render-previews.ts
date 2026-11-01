@@ -21,12 +21,11 @@ export async function capturePreviews(folder:string):Promise<void>{
   const page=await browser.newPage({viewport:{width:1280,height:850},deviceScaleFactor:1})
   const failures:string[]=[]
   page.on('pageerror',e=>failures.push(String(e)))
-  await page.goto('http://127.0.0.1:'+port+'/',{waitUntil:'networkidle'})
-  await page.getByRole('heading',{name:'Change impact, made visual.'}).waitFor()
-  await page.getByRole('button',{name:'Architecture',exact:true}).click()
   for(const theme of ['dark','light'] as const){
-   if(theme==='light')await page.getByRole('button',{name:'Toggle light/dark theme'}).click()
-   await page.screenshot({path:join(root,'preview-'+theme+'.png'),animations:'disabled'})
+   await page.goto('http://127.0.0.1:'+port+'/?preview=architecture&theme='+theme,{waitUntil:'networkidle'})
+   const preview=page.getByTestId('architecture-preview')
+   await preview.getByRole('heading',{level:1}).waitFor()
+   await preview.screenshot({path:join(root,'preview-'+theme+'.png'),animations:'disabled'})
   }
   if(failures.length)throw Error('Viewer error during screenshot: '+failures.join('; '))
   // Keep a conventional image URL that can be embedded in PR comments.

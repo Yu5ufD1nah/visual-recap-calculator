@@ -17,7 +17,7 @@ try{
  await mkdir('demo-artifacts',{recursive:true})
  for(const [name,fixture] of [['architecture','architecture'],['ui-states','ui']] as const){
   await page.goto('http://127.0.0.1:'+port+'/?fixture='+fixture,{waitUntil:'networkidle'})
-  await page.getByRole('heading',{name:'Change impact, made visual.'}).waitFor()
+  await page.getByRole('heading',{level:1}).waitFor()
   if(fixture==='ui')await page.getByRole('button',{name:'UI states'}).click()
   await page.screenshot({path:'demo-artifacts/'+name+'.png',fullPage:true,animations:'disabled'})
  }

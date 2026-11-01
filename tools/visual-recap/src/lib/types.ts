@@ -7,5 +7,5 @@ export interface GraphEdge { from: string; to: string; label: string }
 export interface KeyChange { path: string; summary: string; before: string; after: string; annotations: string[] }
 export interface ContractChange { kind: 'api' | 'schema'; name: string; status: FileStatus; before: string; after: string; file: string }
 export interface UIState { title: string; before: string; interaction: string; after: string; files: string[] }
-export interface RecapDocumentV1 { version: 1; source: Source; insightSource?: 'copilot' | 'evidence-only'; summary: string; nodes: GraphNode[]; edges: GraphEdge[]; files: ChangedFile[]; keyChanges: KeyChange[]; contracts: ContractChange[]; uiStates: UIState[]; reviewNotes: string[]; evidenceCompleteness: 'full' | 'partial' }
+export interface RecapDocumentV1 { version: 1; source: Source; title?: string; insightSource?: 'copilot' | 'evidence-only'; summary: string; nodes: GraphNode[]; edges: GraphEdge[]; files: ChangedFile[]; keyChanges: KeyChange[]; contracts: ContractChange[]; uiStates: UIState[]; reviewNotes: string[]; evidenceCompleteness: 'full' | 'partial' }
 

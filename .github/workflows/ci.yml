@@ -24,3 +24,11 @@ jobs:
         working-directory: tools/visual-recap
       - run: npm run test:e2e
         working-directory: tools/visual-recap
+      - name: Upload architecture comment previews for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-comment-previews
+          path: tools/visual-recap/test-results/**/architecture-preview-*.png
+          if-no-files-found: warn
+          retention-days: 7

@@ -19,3 +19,10 @@ Use a dependency-free ES module calculator and Node tests. Reuse the source-grou
 ## Acceptance evidence to record
 
 Local arithmetic and viewer checks; exact-head GitHub CI; live calculator interactions; demo PR artifact, publisher, Pages deployment, preview/comment; second-commit stable URL and comment refresh. Copilot-authored insights remain unverified until the new repository secret is supplied. Fixture tests do not establish live Copilot success.
+
+## Reviewer presentation feedback — 1 November 2026
+
+- Use the verified GitHub PR title as the viewer heading and browser title. Existing recaps without a title remain readable using their own summary. Model output must not override title metadata.
+- Publish an architecture-focused static image in the GitHub comment: PR title and revision, the complete diagram with visible relationship labels, and a short link hint. Omit dashboard metrics, navigation, pan/zoom controls and the selected-node sidebar from this image.
+- Keep the full interactive viewer and its source-linked review sections at the same URL. State clearly that the comment contains a static preview.
+- Test title provenance, legacy compatibility, HTML escaping, graph-only screenshot composition, both themes and full-viewer behavior. CI uploads rendered previews for review. Production screenshots change after reviewed tooling reaches trusted main and a fresh recap runs.

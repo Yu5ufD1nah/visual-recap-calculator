@@ -1,0 +1,17 @@
+import {test,expect} from '@playwright/test'
+test('comment image presents the PR-specific architecture without dashboard chrome',async({page},testInfo)=>{
+ await page.goto('/?fixture=architecture&preview=architecture')
+ const preview=page.getByTestId('architecture-preview')
+ await expect(preview.getByRole('heading',{level:1,name:'Format calculator results consistently'})).toBeVisible()
+ await expect(preview.locator('.graph-edge-label').filter({hasText:'format result'})).toBeVisible()
+ await expect(preview.locator('.graph-node')).toHaveCount(3)
+ await expect(preview.locator('.graph-actions')).toHaveCount(0)
+ await expect(preview.locator('.detail-pane')).toHaveCount(0)
+ await expect(page.getByRole('navigation',{name:'Recap sections'})).toHaveCount(0)
+ const nodes=await preview.locator('.graph-node').all()
+ for(const node of nodes)await expect(node).toHaveAttribute('opacity','1')
+ await preview.screenshot({path:testInfo.outputPath('architecture-preview-dark.png'),animations:'disabled'})
+ await page.goto('/?fixture=architecture&preview=architecture&theme=light')
+ await expect(page.locator('.architecture-preview.theme-light')).toBeVisible()
+ await page.getByTestId('architecture-preview').screenshot({path:testInfo.outputPath('architecture-preview-light.png'),animations:'disabled'})
+})
