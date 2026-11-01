@@ -22,7 +22,7 @@ for(const item of items.filter(x=>x.isDirectory()&&/^pr-\d+$/.test(x.name))){
  const viewer=pages+'/recaps/'+item.name+'/'
  await upsertRecapComment({
   list:async path=>{const r=await github(path);if(r.status!==200||!Array.isArray(r.data))throw Error('Cannot read PR comments');return r.data as Array<{id:number;body:string;user?:{login?:string}}>},
-  write:async(method,path,body)=>{const r=await github(path,method,body);if(r.status!==200&&r.status!==201)throw Error('Cannot update PR comment')}
+  write:async(method,path,body)=>{const r=await github(path,method,body);if(r.status!==200&&r.status!==201)throw Error('Cannot update PR comment (GitHub HTTP '+r.status+')')}
  },recap,viewer,viewer+'preview.png')
  checked++
 }
