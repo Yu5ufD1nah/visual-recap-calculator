@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "Yu5ufD1nah/visual-recap-calculator",
+    "number": 102,
+    "headSha": "cccccccccccccccccccccccccccccccccccccccc"
+  },
+  "summary": "Synthetic UI/API calculator fixture, not a live API.",
+  "nodes": [],
+  "edges": [],
+  "files": [
+    {
+      "path": "examples/calculator-api.txt",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-GET /calculator/status -> value\n+GET /calculator/status -> value, error"
+    },
+    {
+      "path": "app/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-Result: 0\n+Result: 0 (announced)"
+    }
+  ],
+  "keyChanges": [],
+  "contracts": [
+    {
+      "kind": "api",
+      "name": "GET /calculator/status",
+      "status": "modified",
+      "before": "GET /calculator/status -> value",
+      "after": "GET /calculator/status -> value, error",
+      "file": "examples/calculator-api.txt"
+    }
+  ],
+  "uiStates": [
+    {
+      "title": "Calculation result",
+      "before": "Result display shows zero",
+      "interaction": "Choose numbers and an operation",
+      "after": "The resulting value is announced",
+      "files": [
+        "app/index.html"
+      ]
+    }
+  ],
+  "reviewNotes": [
+    "Synthetic fixture only: inspect live PR source for production evidence."
+  ],
+  "evidenceCompleteness": "full"
+}

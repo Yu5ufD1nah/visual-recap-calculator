@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "Yu5ufD1nah/visual-recap-calculator",
+    "number": 103,
+    "headSha": "cccccccccccccccccccccccccccccccccccccccc"
+  },
+  "summary": "Synthetic code-only calculator fixture.",
+  "nodes": [],
+  "edges": [],
+  "files": [
+    {
+      "path": "app/calculator.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-return left + right\n+return Number((left + right).toPrecision(12))"
+    }
+  ],
+  "keyChanges": [],
+  "contracts": [],
+  "uiStates": [],
+  "reviewNotes": [
+    "Synthetic fixture only: inspect live PR source for production evidence."
+  ],
+  "evidenceCompleteness": "full"
+}

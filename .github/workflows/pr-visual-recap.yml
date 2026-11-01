@@ -1,0 +1,103 @@
+name: PR Visual Recap
+# Read-only source PR processing, no PR-head checkout/execution.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: visual-recap-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  generate:
+    if: >-
+      github.repository == 'Yu5ufD1nah/visual-recap-calculator' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out trusted base, never PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Detect visual recap tools on trusted base
+        id: trusted_tooling
+        shell: bash
+        run: |
+          if [[ -f tools/visual-recap/package.json &&
+                -f tools/visual-recap/scripts/collect-pr.ts &&
+                -f tools/visual-recap/scripts/generate-recap.ts ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Visual Recap pending installation::Trusted base has no tools/visual-recap yet. Generation is skipped until approved tooling is merged to main."
+            echo "### Visual Recap pending installation" >> "$GITHUB_STEP_SUMMARY"
+            echo "The trusted base revision does not contain tools/visual-recap. No untrusted pull-request code or credentials were used; merge approved tooling before a live recap run." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.trusted_tooling.outputs.available == 'true'
+        with:
+          node-version: '22'
+      - name: Install reviewer viewer dependencies
+        if: steps.trusted_tooling.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        run: npm install --no-audit --no-fund
+      - name: Validate review renderer
+        if: steps.trusted_tooling.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        run: |
+          npm run test
+          npm run typecheck
+          npm run build
+      - name: Select explicit generation mode
+        id: mode
+        env:
+          CONFIGURED: ${{ secrets.COPILOT_GITHUB_TOKEN != '' }}
+        run: echo "copilot=$CONFIGURED" >> "$GITHUB_OUTPUT"
+      - name: Install Copilot CLI
+        if: steps.mode.outputs.copilot == 'true'
+        run: npm install --global @github/copilot
+      - name: Collect bounded evidence
+        if: steps.trusted_tooling.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: npx tsx scripts/collect-pr.ts
+      - name: Ask Copilot for validated recap JSON
+        id: copilot
+        continue-on-error: true
+        if: steps.trusted_tooling.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ steps.mode.outputs.copilot }}" == "true" ]]; then
+            npx tsx scripts/generate-recap.ts
+          else
+            npx tsx scripts/generate-evidence-only.ts
+          fi
+      - name: Explain unavailable visual recap without blocking review
+        if: steps.trusted_tooling.outputs.available == 'true' && steps.copilot.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::notice title=Visual Recap unavailable::Copilot did not produce a validated recap. No recap artifact will be published; standard PR checks and human review are unaffected."
+          echo "### Visual Recap unavailable" >> "$GITHUB_STEP_SUMMARY"
+          echo "Copilot generation failed or its output failed validation. No recap artifact is being published for this revision. Check this run's Copilot step diagnostics; regular CI and human review are still required." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload data-only handoff
+        if: steps.trusted_tooling.outputs.available == 'true' && steps.copilot.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-recap-bundle
+          path: |
+            tools/visual-recap/.recap/snapshot.json
+            tools/visual-recap/.recap/recap.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+

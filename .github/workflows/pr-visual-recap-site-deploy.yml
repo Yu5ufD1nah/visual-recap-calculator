@@ -1,0 +1,104 @@
+name: Deploy latest Calculator Lab Visual Recap site
+# Durable stage-only workflow commits each PR to gh-pages. This serialized worker
+# always deploys a fresh checkout of the accumulated branch. The periodic
+# reconciliation catches repository_dispatch runs displaced while one is active.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Publish Calculator Lab Visual Recap]
+    types: [completed]
+  repository_dispatch:
+    types: [visual-recap-site-staged]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: walle-visual-recap-pages-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.repository == 'Yu5ufD1nah/visual-recap-calculator' &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      issues: write
+      pull-requests: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout trusted scripts from main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install trusted tooling
+        working-directory: tools/visual-recap
+        run: npm install --no-audit --no-fund
+      - name: Check whether a durable site has been staged
+        id: durable_site
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          auth_header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          error_log="$(mktemp)"
+          trap 'rm -f "$error_log"' EXIT
+          if git -c http.extraheader="$auth_header" ls-remote --exit-code --heads \
+            "https://github.com/${GITHUB_REPOSITORY}.git" gh-pages >/dev/null 2>"$error_log"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            status=$?
+            if [[ "$status" -eq 2 ]]; then
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "### No previous recap site" >> "$GITHUB_STEP_SUMMARY"
+              printf '%s\n' 'No durable `gh-pages` site exists yet. Deploying the calculator without previous recaps.' >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error::Could not determine gh-pages availability (git exit status $status). Deployment cannot safely skip." >&2
+              cat "$error_log" >&2
+              exit "$status"
+            fi
+          fi
+      - name: Fetch latest complete durable site under deployment lock
+        if: steps.durable_site.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" \
+            clone --depth=1 -b gh-pages "https://github.com/${GITHUB_REPOSITORY}.git" site
+          test -s site/recaps/index.html
+          rm -rf site/.git
+      - name: Stage calculator alongside accumulated recaps
+        run: |
+          mkdir -p site/recaps
+          cp app/index.html app/app.js app/calculator.js app/styles.css site/
+          touch site/.nojekyll
+          if [[ ! -f site/recaps/index.html ]]; then
+            printf '%s\n' '<!doctype html><html lang="en"><meta charset="utf-8"><title>PR Recaps</title><h1>PR Visual Recaps</h1><p>No recaps yet. Open an eligible PR to generate one.</p><a href="../">Calculator</a></html>' > site/recaps/index.html
+          fi
+      - name: Upload accumulated site from current gh-pages tip
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Deploy complete current site
+        uses: actions/deploy-pages@v4
+        id: deployment
+      - name: Reconcile all current PR comments after deployment
+        working-directory: tools/visual-recap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGES_ROOT_URL: ${{ steps.deployment.outputs.page_url }}
+          SITE_ROOT: ../../site
+        run: npx tsx scripts/reconcile-comments.ts
+

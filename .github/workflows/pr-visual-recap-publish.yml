@@ -1,0 +1,151 @@
+name: Publish Calculator Lab Visual Recap
+# This workflow is trusted default-branch code. Downloaded PR artifacts remain untrusted DATA.
+on:
+  workflow_run:
+    workflows: [PR Visual Recap]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'Yu5ufD1nah/visual-recap-calculator' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.repository == 'Yu5ufD1nah/visual-recap-calculator'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: read
+      issues: write
+    steps:
+      - name: Checkout trusted main scripts only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install trusted toolchain
+        working-directory: tools/visual-recap
+        run: npm install --no-audit --no-fund
+      - name: Check for a validated recap artifact
+        id: handoff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" --jq '[.artifacts[] | select(.name=="visual-recap-bundle" and .expired==false)] | length')"
+          if [[ "$count" == "1" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$count" == "0" ]]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=No recap to publish::Generation returned no validated recap artifact; trusted publisher skipped."
+            echo "### Visual Recap not published" >> "$GITHUB_STEP_SUMMARY"
+            echo "No validated recap bundle was produced for the source PR. No Pages content or PR comment has been changed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Unexpected multiple recap artifacts; refusing to publish"
+            exit 1
+          fi
+      - name: Download artifact from eligible run
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          mkdir -p .recap
+          gh run download "$RUN_ID" --repo Yu5ufD1nah/visual-recap-calculator --name visual-recap-bundle --dir .recap
+          test -s .recap/snapshot.json
+          test -s .recap/recap.json
+      - name: Build executable viewer only from trusted main
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        run: npm run build
+      - name: Verify artifact identity and current PR commit
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLIC_RECAP_APPROVED: 'true'
+        run: npx tsx scripts/verify-run.ts
+      - name: Check out stored site without running its code
+        if: steps.handoff.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir site
+          git -C site init -b gh-pages
+          git -C site remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          if git -C site -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" fetch --depth=1 origin gh-pages; then
+            git -C site checkout -B gh-pages FETCH_HEAD
+          fi
+      - name: Stage only validated static viewer and its evidence
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          PAGES_ROOT: ../../site
+          VIEWER_ASSETS: dist
+        run: npx tsx scripts/publish-site.ts
+      - name: Install Chromium for screenshots
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        run: npx playwright install --with-deps chromium
+      - name: Capture real browser screenshot previews
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          RECAP_DEST: ../../site/recaps/pr-${{ github.event.workflow_run.pull_requests[0].number }}
+        run: npx tsx scripts/render-previews.ts
+      - name: Check freshness again immediately before releasing content
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLIC_RECAP_APPROVED: 'true'
+        run: npx tsx scripts/verify-run.ts
+      - name: Commit durable shared state with conflict-aware retry
+        if: steps.handoff.outputs.available == 'true'
+        working-directory: tools/visual-recap
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLIC_RECAP_APPROVED: 'true'
+          PAGES_ROOT: ../../site
+          VIEWER_ASSETS: dist
+          RECAP_DEST: ../../site/recaps/pr-${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          git -C ../../site config user.name "github-actions[bot]"
+          git -C ../../site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git -C ../../site add -A
+            if ! git -C ../../site diff --cached --quiet; then
+              git -C ../../site commit -m "docs(SCRUM-64): publish visual recap snapshot"
+            fi
+            if git -C ../../site -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:gh-pages; then
+              exit 0
+            fi
+            echo "::warning::Concurrent Pages update detected; refetch and restage attempt $attempt"
+            git -C ../../site -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" fetch origin gh-pages
+            git -C ../../site reset --hard FETCH_HEAD
+            npx tsx scripts/verify-run.ts
+            npx tsx scripts/publish-site.ts
+            npx tsx scripts/render-previews.ts
+          done
+          echo "::error::Could not safely publish after retries"
+          exit 1
+      - name: Request deployment of latest persisted Pages state
+        if: steps.handoff.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/"$GITHUB_REPOSITORY"/dispatches -f event_type=visual-recap-site-staged
+

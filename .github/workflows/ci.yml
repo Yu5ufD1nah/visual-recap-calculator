@@ -1,0 +1,26 @@
+name: Calculator and Viewer CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test && npm run check
+      - run: npm ci --no-audit --no-fund
+        working-directory: tools/visual-recap
+      - run: npm test && npm run typecheck && npm run lint && npm run build
+        working-directory: tools/visual-recap
+      - run: npx playwright install --with-deps chromium
+        working-directory: tools/visual-recap
+      - run: npm run test:e2e
+        working-directory: tools/visual-recap

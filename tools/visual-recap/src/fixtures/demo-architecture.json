@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "source": {
+    "repository": "Yu5ufD1nah/visual-recap-calculator",
+    "number": 101,
+    "headSha": "cccccccccccccccccccccccccccccccccccccccc"
+  },
+  "summary": "Synthetic calculator fixture: calculation results flow through a formatter before display. This is sample viewer data, not a live PR.",
+  "nodes": [
+    {
+      "id": "ui",
+      "label": "Calculator UI",
+      "description": "Displays the formatted result.",
+      "files": [
+        "app/app.js"
+      ]
+    },
+    {
+      "id": "engine",
+      "label": "Calculator Engine",
+      "description": "Calculates finite arithmetic results.",
+      "files": [
+        "app/calculator.js"
+      ]
+    },
+    {
+      "id": "formatter",
+      "label": "Number Formatter",
+      "description": "Formats finite calculation results.",
+      "files": [
+        "app/format.js"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "ui",
+      "to": "engine",
+      "label": "calculate"
+    },
+    {
+      "from": "engine",
+      "to": "formatter",
+      "label": "format result"
+    }
+  ],
+  "files": [
+    {
+      "path": "app/app.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-show(result)\n+show(format(result))"
+    },
+    {
+      "path": "app/calculator.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-return left + right\n+return Number((left + right).toPrecision(12))"
+    },
+    {
+      "path": "app/format.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "patch": "@@ -1 +1 @@\n-format(value): number\n+format(value): string"
+    }
+  ],
+  "keyChanges": [
+    {
+      "path": "app/app.js",
+      "summary": "Display formatted result",
+      "before": "show(result)",
+      "after": "show(format(result))",
+      "annotations": [
+        "Display formatting is separated from arithmetic."
+      ]
+    },
+    {
+      "path": "app/calculator.js",
+      "summary": "Round arithmetic output",
+      "before": "return left + right",
+      "after": "return Number((left + right).toPrecision(12))",
+      "annotations": [
+        "Suppress floating-point display noise."
+      ]
+    },
+    {
+      "path": "app/format.js",
+      "summary": "Explicit decimal precision",
+      "before": "format(value): number",
+      "after": "format(value): string",
+      "annotations": [
+        "Contract now encodes a display string."
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "kind": "api",
+      "name": "format",
+      "status": "modified",
+      "before": "format(value): number",
+      "after": "format(value): string",
+      "file": "app/format.js"
+    }
+  ],
+  "uiStates": [],
+  "reviewNotes": [
+    "Synthetic fixture only: inspect live PR source for production evidence."
+  ],
+  "evidenceCompleteness": "full"
+}
