@@ -34,6 +34,7 @@ it('separates privileged deployment and reconciles comments only after deploymen
  expect(publisher).not.toContain('pages: write')
  expect(deployer).toContain('pages: write')
  expect(deployer).toContain('id-token: write')
+ expect(deployer).toContain('pull-requests: write')
  expect(deployer).toContain('cancel-in-progress: false')
  expect(deployer).toContain('scripts/reconcile-comments.ts')
  expect(deployer.indexOf('actions/deploy-pages@')).toBeLessThan(deployer.indexOf('scripts/reconcile-comments.ts'))

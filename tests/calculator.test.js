@@ -27,6 +27,7 @@ test('keyboard controls use the same calculation state machine',()=>{
  for(const key of ['1','2','+','3','Enter'])c.input(keyToInput(key));
  assert.equal(c.display,'15');
  c.input(keyToInput('Escape'));assert.equal(c.display,'0');
+ c.input('9');c.input(keyToInput('Delete'));assert.equal(c.display,'0');
  assert.equal(keyToInput('Backspace'),'backspace');
  assert.equal(keyToInput('Tab'),null);assert.equal(keyToInput('F5'),null);
 });

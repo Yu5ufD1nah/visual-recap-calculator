@@ -2,7 +2,7 @@ export function keyToInput(key) {
   if (/^[0-9.+*/=-]$/.test(key)) return key;
   if (key === 'Enter') return '=';
   if (key === 'Backspace') return 'backspace';
-  if (key === 'Escape') return 'clear';
+  if (key === 'Escape' || key === 'Delete') return 'clear';
   return null;
 }
 
