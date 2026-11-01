@@ -6,9 +6,10 @@ import ui from './fixtures/demo-ui-api.json'
 import code from './fixtures/demo-code-only.json'
 import { parseRecap } from './lib/validate'
 import type { RecapDocumentV1,PrSnapshot } from './lib/types'
+import {recapTitle} from './lib/presentation'
 import './styles.css'
 
-function sourceSnapshot(doc: RecapDocumentV1): PrSnapshot { return {...doc.source,baseSha:doc.source.baseSha||'f'.repeat(40),title:'Visual recap',files:doc.files} }
+function sourceSnapshot(doc: RecapDocumentV1): PrSnapshot { return {...doc.source,baseSha:doc.source.baseSha||'f'.repeat(40),title:doc.title||'Visual recap',files:doc.files} }
 async function load() {
  const params = new URLSearchParams(location.search)
  const fixture = params.get('fixture') || 'architecture'
@@ -22,7 +23,8 @@ async function load() {
  }
  const d=raw as RecapDocumentV1
  const recap = parseRecap(d,sourceSnapshot(d))
- createRoot(document.getElementById('root')!).render(<React.StrictMode><App recap={recap}/></React.StrictMode>)
+ document.title=recapTitle(recap)+' · Visual Recap'
+ createRoot(document.getElementById('root')!).render(<React.StrictMode><App recap={recap} preview={params.get('preview')==='architecture'} initialTheme={params.get('theme')==='light'?'light':'dark'}/></React.StrictMode>)
 }
 load().catch(error=>{ const el=document.getElementById('root');if(el) el.textContent='Unable to load verified recap: '+String(error) })
 

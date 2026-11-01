@@ -49,5 +49,6 @@
   "reviewNotes": [
     "Synthetic fixture only: inspect live PR source for production evidence."
   ],
-  "evidenceCompleteness": "full"
+  "evidenceCompleteness": "full",
+  "title": "Announce calculator results and errors"
 }

@@ -3,3 +3,16 @@
 @media(max-width:800px){.topbar{padding:0 16px}.content{padding:24px 16px}.graph-layout,.overview-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.hero-badge{display:none}.state-grid{grid-template-columns:1fr}.graph-frame{min-height:300px}.graph-frame svg{min-height:290px}.section-head{align-items:flex-start;flex-direction:column}}@media(max-width:480px){.diff-grid,.contract-pair{grid-template-columns:1fr}.hero h1{font-size:33px}.sha-chip{display:none}.top-actions{gap:6px}.top-actions a{font-size:11px}.topbar{height:68px}.toolbar{flex-wrap:wrap}.toolbar input{flex-basis:100%}footer{display:block}footer span{display:block;margin-top:5px}}
 .theme-light .graph-frame{background-color:#e6eef8}.theme-light .graph-frame svg rect{filter:brightness(1.06)}
 
+/* The GitHub comment is a static image; give the architecture the full canvas. */
+.architecture-preview{width:1200px;min-height:0;padding:30px 34px 18px}
+.preview-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:28px;margin-bottom:22px}
+.preview-heading .eyebrow{margin:0 0 10px;letter-spacing:1.4px}
+.preview-heading h1{font-size:30px;line-height:1.2;letter-spacing:-.6px;margin:0;overflow-wrap:anywhere}
+.preview-kind{flex:none;padding:7px 11px;border:1px solid var(--line);border-radius:7px;color:var(--muted);font-size:12px}
+.architecture-preview .graph-layout{grid-template-columns:1fr}
+.architecture-preview .graph-frame{min-height:0}
+.architecture-preview .graph-frame svg{display:block;min-height:0;width:100%;height:auto;cursor:default}
+.graph-edge-label{fill:var(--muted);font-size:11px;font-weight:650;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.preview-caption,.preview-disclosure{color:var(--muted);font-size:12px;margin:14px 0 0}
+.preview-disclosure{margin:0 0 16px;padding-left:10px;border-left:3px solid #f59e0b}
+

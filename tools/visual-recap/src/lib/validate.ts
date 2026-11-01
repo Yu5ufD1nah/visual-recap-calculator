@@ -5,7 +5,7 @@ const path = z.string().min(1).max(400).refine(x => !x.startsWith('/') && !x.spl
 const file = z.object({ path, previousPath: path.optional(), status: z.enum(['added','modified','removed','renamed']), additions: z.number().int().nonnegative().max(100000), deletions: z.number().int().nonnegative().max(100000), patch: z.string().max(20000).optional() }).strict()
 const schema = z.object({
  version: z.literal(1), source: z.object({ repository: z.string().max(180), number: z.number().int().positive(), headSha: z.string().regex(/^[a-f0-9]{40}$/i), baseSha: z.string().regex(/^[a-f0-9]{40}$/i).optional() }).strict(),
- summary: short,
+ title: z.string().min(1).max(300).optional(), summary: short,
  nodes: z.array(z.object({ id:z.string().min(1).max(80).regex(/^[\w.-]+$/), label:z.string().min(1).max(160), description:short, files:z.array(path).max(20) }).strict()).max(60),
  edges: z.array(z.object({from:z.string(),to:z.string(),label:z.string().max(160)}).strict()).max(100),
  files:z.array(file).max(120),
@@ -55,6 +55,7 @@ export function parseRecap(raw: unknown, snapshot: PrSnapshot): RecapDocumentV1 
  if (!result.success) return fail(result.error.issues.slice(0,3).map(x => x.message).join('; '))
  const d = result.data
  if (d.source.repository !== snapshot.repository || d.source.number !== snapshot.number || d.source.headSha !== snapshot.headSha || (d.source.baseSha && d.source.baseSha !== snapshot.baseSha)) fail('source identity mismatch')
+ if (d.title !== undefined && d.title !== snapshot.title) fail('PR title does not match trusted snapshot')
  const actual = new Map(snapshot.files.map(f => [f.path,f]))
  const nodes = new Set<string>()
  for (const n of d.nodes) { if (nodes.has(n.id)) fail('duplicate node id'); nodes.add(n.id); for (const p of n.files) if (!actual.has(p)) fail('unknown diagram file') }
@@ -95,7 +96,7 @@ export function parseRecap(raw: unknown, snapshot: PrSnapshot): RecapDocumentV1 
  if (snapshot.evidenceCompleteness==='partial' && d.evidenceCompleteness==='full') fail('partial evidence cannot be called full')
  for (const s of d.uiStates) for (const p of s.files) if (!actual.has(p)) fail('unknown UI source')
  const unsafe = /<script\b|<iframe\b|javascript:|data:text\/html|onerror\s*=|<svg\b/i
- const strings = [d.summary,...d.nodes.flatMap(n => [n.label,n.description]),...d.keyChanges.flatMap(c => [c.summary,c.before,c.after,...c.annotations]),...d.contracts.flatMap(c => [c.before,c.after]),...d.uiStates.flatMap(u => [u.before,u.after,u.interaction]),...d.reviewNotes]
+ const strings = [d.title||'',d.summary,...d.nodes.flatMap(n => [n.label,n.description]),...d.keyChanges.flatMap(c => [c.summary,c.before,c.after,...c.annotations]),...d.contracts.flatMap(c => [c.before,c.after]),...d.uiStates.flatMap(u => [u.before,u.after,u.interaction]),...d.reviewNotes]
  if (strings.some(x => unsafe.test(x))) fail('active content')
  return d
 }

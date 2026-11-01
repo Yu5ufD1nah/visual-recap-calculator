@@ -5,7 +5,7 @@ export interface CommentApi { list(path:string):Promise<Array<{id:number;body:st
 export function recapComment(recap:RecapDocumentV1,viewerUrl:string,previewUrl:string):string {
  for(const url of [viewerUrl,previewUrl])if(!/^https:\/\/[-\w.]+(?:\/[-\w.%]+)*\/?$/.test(url))throw Error('Unsafe hosted URL')
  const pr=pullRequestUrl(recap.source)
- return [COMMENT_MARKER,'### Visual review recap', '', '['+'![Interactive visual recap preview]('+previewUrl+')'+']('+viewerUrl+')','', '**[Open interactive recap]('+viewerUrl+')**', '', '**Source:** [PR #'+recap.source.number+']('+pr+') · revision `'+recap.source.headSha.slice(0,12)+'`', '',recap.summary.replace(/[\[\]<>]/g,''), '', '> Source-grounded review aid; evidence-only mode omits AI insights. Verify against the real diff; human review remains required.'].join('\n')
+ return [COMMENT_MARKER,'### Architecture diagram', '', '['+'![Static architecture diagram preview]('+previewUrl+')'+']('+viewerUrl+')','', 'Static preview — open the linked viewer for interactive diagrams, diffs and source navigation.', '', '**[Open interactive recap]('+viewerUrl+')**', '', '**Source:** [PR #'+recap.source.number+']('+pr+') · revision `'+recap.source.headSha.slice(0,12)+'`', '',recap.summary.replace(/[\[\]<>]/g,''), '', '> Source-grounded review aid; evidence-only mode omits AI insights. Verify against the real diff; human review remains required.'].join('\n')
 }
 export async function upsertRecapComment(api:CommentApi,recap:RecapDocumentV1,viewerUrl:string,previewUrl:string){
  let match:{id:number;body:string;user?:{type?:string;login?:string}}|undefined

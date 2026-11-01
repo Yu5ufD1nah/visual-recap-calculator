@@ -1,24 +1,33 @@
 import {useState} from 'react'
 import type {RecapDocumentV1} from './lib/types'
 import {pullRequestUrl} from './lib/links'
+import {recapTitle} from './lib/presentation'
 import {FileTree} from './components/FileTree'
 import {ArchitectureGraph} from './components/ArchitectureGraph'
 import {KeyDiffTabs} from './components/KeyDiffTabs'
 import {ContractChanges} from './components/ContractChanges'
 import {UIStateCompare} from './components/UIStateCompare'
 import {SectionNav,type SectionKey} from './components/SectionNav'
-export function App({recap}:{recap:RecapDocumentV1}){
+export function App({recap,preview=false,initialTheme='dark'}:{recap:RecapDocumentV1;preview?:boolean;initialTheme?:'dark'|'light'}){
  const [active,setActive]=useState<SectionKey>('overview')
  const [selectedFile,setSelectedFile]=useState<string | undefined>()
- const [theme,setTheme]=useState<'dark'|'light'>('dark')
+ const [theme,setTheme]=useState<'dark'|'light'>(initialTheme)
  const pr=pullRequestUrl(recap.source)
  const evidenceOnly=recap.insightSource==='evidence-only'
+ const title=recapTitle(recap)
+ if(preview)return <article className={'app theme-'+theme+' architecture-preview'} data-testid="architecture-preview">
+  <header className="preview-heading"><div><p className="eyebrow">PR #{recap.source.number} · {recap.source.headSha.slice(0,12)}</p><h1>{title}</h1></div><span className="preview-kind">{evidenceOnly?'File-change diagram':'Architecture diagram'}</span></header>
+  {evidenceOnly?<p className="preview-disclosure">Verified file changes only · Copilot insights unavailable</p>:null}
+  {recap.evidenceCompleteness==='partial'?<p className="preview-disclosure">Partial evidence · some impacts may be omitted</p>:null}
+  <ArchitectureGraph nodes={recap.nodes} edges={recap.edges} source={recap.source} files={recap.files} staticPreview/>
+  <p className="preview-caption">Static PR preview · Open the linked Visual Recap to explore the diagram, diffs and source.</p>
+ </article>
  return <div className={'app theme-'+theme}>
    <header className="topbar"><div className="brand"><div className="brand-mark">C</div><div><strong>Calculator Lab</strong><small>VISUAL RECAP</small></div></div>
     <div className="top-actions"><span className="sha-chip" title={recap.source.headSha}>{recap.source.headSha.slice(0,7)}</span><button onClick={()=>setTheme(theme==='dark'?'light':'dark')} aria-label="Toggle light/dark theme">{theme==='dark'?'☀':'☾'}</button><a className="primary-link" href={pr} target="_blank" rel="noopener noreferrer">Back to PR ↗</a></div>
    </header>
    <div className="content"><div className="breadcrumb">GITHUB / {recap.source.repository.toUpperCase()} / PR #{recap.source.number}</div>
-   <div className="hero"><div><p className="eyebrow">PULL REQUEST INTELLIGENCE · SOURCE-GROUNDED</p><h1>Change impact, made visual.</h1><p className="hero-summary">{recap.summary}</p></div><div className="hero-badge"><span>{recap.files.length}</span><small>FILES<br/>CHANGED</small></div></div>
+   <div className="hero"><div><p className="eyebrow">PULL REQUEST INTELLIGENCE · SOURCE-GROUNDED</p><h1>{title}</h1><p className="hero-summary">{recap.summary}</p></div><div className="hero-badge"><span>{recap.files.length}</span><small>FILES<br/>CHANGED</small></div></div>
    {recap.evidenceCompleteness==='partial'?<p role="status" className="warning">Partial diff evidence. This recap may omit impacts.</p>:null}
    {evidenceOnly?<p role="status" className="warning">Automated Copilot insights are unavailable. File-change evidence is shown without contract, UI, or architectural conclusions.</p>:null}
    <div className="metrics"><div><span>{recap.nodes.length}</span><small>Components mapped</small></div><div><span>{recap.keyChanges.length}</span><small>Focus changes</small></div><div><span>{recap.contracts.length}</span><small>{evidenceOnly?'Contract insights unavailable':'Contract impacts'}</small></div><div><span>{recap.uiStates.length}</span><small>{evidenceOnly?'UI insights unavailable':'UI state sequences'}</small></div></div>
